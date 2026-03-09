@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+env/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Output charts (optional – remove if you want to include them)
+outputs/*.png
