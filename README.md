@@ -1,182 +1,235 @@
-# Football Impact Rating 🏴󠁧󠁢󠁥󠁧󠁬󠁿
+# Football Impact Rating 🏴󠁧󠁢󠁥󠁧󠁬󠁥
 
-A player impact rating system built for Premier League data that goes beyond goals and assists.
+[![Live App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-deployed-FF4B4B?logo=streamlit&logoColor=white)](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)
+
+> **[▶ Open the live app](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)** — no installation required, runs in your browser.
+
+A player impact rating system for Premier League data that goes beyond goals and assists. Built as a portfolio project demonstrating end-to-end ML engineering: synthetic data generation, preprocessing, composite feature engineering, position-aware scoring, unsupervised clustering, and interactive deployment.
 
 ---
 
 ## The Problem with Goals + Assists
 
-Traditional football statistics have a fundamental flaw: they only count high-variance, low-frequency terminal events. A striker who averages 0.38 goals/90 over a season has registered that number from roughly 34 separate 90-minute performances. Contrast this with a centre-back who has made 4.2 clearances, 1.2 tackle wins, 1.0 interceptions, and won 58% of aerial duels in every single one of those same 34 games — a player whose contribution to keeping clean sheets is vast, yet who ends the season with 0 goals and 0 assists.
+Traditional football statistics only count **terminal events** — the final action in a long chain of decisions and movements that actually determined the outcome. A striker averaging 0.38 goals per 90 has registered that number from 34 separate performances. Meanwhile a centre-back who made 4.2 clearances, 1.2 tackle wins, 1.0 interceptions, and won 58% of aerial duels in every one of those 34 games finishes the season with **0 goals, 0 assists** — and looks invisible.
 
-Goals and assists are the outcomes of football, not the process. This system measures the process.
+Goals and assists measure the outcome of football. This system measures the process.
 
 **What this captures that box scores miss:**
-- A centre-back who breaks high lines by carrying the ball 40m (Virgil van Dijk profile)
-- A midfielder who wins the ball back in dangerous areas at elite frequency (Kanté profile)
-- A full-back who creates more expected assisted goals than most attacking midfielders (Trent TAA profile)
-- A striker who generates 0.4 xG but concedes 0.25 xG-worth of chances through his own errors (net-negative action)
+- A centre-back who breaks high lines with 40m progressive carries (van Dijk profile)
+- A midfielder who wins the ball back in dangerous areas at elite rate (Kanté profile)
+- A full-back who creates more xAG than most attacking midfielders (Trent Alexander-Arnold profile)
+- A striker who generates 0.4 xG but gives away a 0.25 xG counter-attack through his own error — net contribution: 0.15
 
 ---
 
-## The Six Composite Metrics
+## Live Demo
 
-All metrics are per-90 minutes and designed around football conceptual dimensions:
+**[https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)**
+
+Select a position and player from the sidebar to see:
+- **Impact score** (0–100) with position percentile
+- **Performance radar** across all composite metrics vs position average
+- **Component breakdown** showing relative strength per metric
+- **Top 10 leaderboard** for that position
+- **Archetype fingerprint heatmap** showing the statistical signature of each player type
+
+---
+
+## How It Works — The Six Composite Metrics
+
+All metrics are per-90 minutes. Every formula weight has a football reason, not just a mathematical one.
 
 ### 1. Possession Progression Index (PPI)
-**"Does this player advance the ball up the pitch?"**
+*"Does this player advance the ball up the pitch?"*
 
-Combines progressive carries (highest weight — personal risk, personal reward), progressive passes (slightly discounted — credit shared between passer and receiver), progressive passes received (lowest weight — good positioning but partly teammate-dependent), and passes into the final third.
+```
+PPI = (progressive_carries × 1.0
+     + progressive_passes × 0.7
+     + progressive_passes_received × 0.4
+     + passes_into_final_third × 0.8) / 4
+```
 
-*Kevin De Bruyne and Declan Rice both score elite PPI, but via different routes.*
+Carries get the highest weight because they represent personal risk and personal reward. Receiving a progressive pass gets the lowest weight because the teammate who played it deserves most of the credit. Kevin De Bruyne and Declan Rice both score elite PPI — but via different routes.
+
+---
 
 ### 2. Defensive Action Quality (DAQ)
-**"Does this player win the ball back effectively?"**
+*"Does this player win the ball back effectively?"*
 
-Tackles won (highest weight — physical ball recovery), interceptions (anticipatory defending), effective pressing (pressures × success rate — volume without success is noise), and aerial duels won (% × attempts — win rate alone ignores a CB who wins 80% of 1 aerial vs 60% of 8).
+```
+DAQ = (tackles_won × 1.2
+     + interceptions × 1.0
+     + pressures × (pressure_success_rate / 100) × 0.3
+     + (aerial_duels_won_pct / 100) × aerials_attempted × 0.8) / 4
+```
 
-*N'Golo Kanté would score elite. Sean Dyche's Burnley 2022-23 press volume would score low — they pressed desperately but infrequently won the ball back.*
+The critical detail: pressing volume is **multiplied** by success rate, not added to it. Burnley under Dyche in 2022–23 pressed constantly but rarely won the ball back — pure volume would make them look elite. Multiplying by success rate correctly identifies them as low-value pressers. Aerial contribution weights attempt volume so a player who wins 60% of 8 aerials is valued above one who wins 80% of 1.
+
+---
 
 ### 3. Chance Creation Contribution (CCC)
-**"Does this player create dangerous chances?"**
+*"Does this player create dangerous chances?"*
 
-Key passes (standard metric, modest weight), shot creating actions (broad volume signal, discounted), goal creating actions (premium weight — directly led to goals), and xAG — expected assisted goals — which gets the highest weight because it captures chance *quality*, not just quantity.
+```
+CCC = (key_passes × 1.0
+     + shot_creating_actions × 0.6
+     + goal_creating_actions × 1.5
+     + xAG × 2.0) / 4
+```
 
-*A player who assists 3 goals from tap-ins will score lower than one who creates 2 goals from genuine through-ball chances. xAG is the forensic evidence.*
+xAG (expected assisted goals) gets the highest weight because it captures chance **quality** not just quantity. A player who lays off three tap-ins will score lower than one who threads two genuine one-on-ones. Key passes get a modest weight because they treat a 2-yard cutback to a crowded box equally to a 40-yard through-ball.
+
+---
 
 ### 4. Ball Retention Score (BRS)
-**"Does this player keep the ball under pressure?"**
+*"Does this player keep the ball under pressure?"*
 
-Pass completion rate (but penalised to avoid rewarding sideways passers) minus miscontrols minus dispossessions plus a bonus for carrying into the final third. The final-third carry bonus separates *productive risk-taking* from timid ball-recycling.
+```
+BRS = (pass_completion_pct / 100 × 2.0)
+    − (miscontrols × 0.3)
+    − (dispossessed × 0.4)
+    + (carries_into_final_third × 0.5)
+```
 
-*Sergio Busquets has near-perfect BRS. Wilfried Zaha had good BRS despite high dispossession because his carries_into_final_third bonus offset the penalty.*
+Raw completion rate rewards sideways passing. The penalties for miscontrols and dispossession force the metric to distinguish safe-but-useless recyclers from genuine ball-players. The final-third carry bonus rewards players who accept productive risk rather than retreating.
+
+---
 
 ### 5. Pressing Intensity Index (PII)
-**"Does this player press with purpose and follow through?"**
+*"Does this player press with purpose and follow through?"*
 
-Multiplicative structure: pressures × success rate × (1 + carries_into_final_third bonus). Pressing without winning the ball contributes almost nothing. The carry bonus captures "press-and-go" players who compound territorial gains.
+```
+PII = pressures × (pressure_success_rate / 100) × (1 + carries_into_final_third × 0.1)
+```
+
+Multiplicative structure is intentional. Pressing 40 times at 15% success rate (6.0 effective recoveries) equals pressing 20 times at 30% (also 6.0). The progressive carry modifier rewards "press-and-go" players who immediately drive forward after winning the ball — compounding the territorial gain from the press.
+
+---
 
 ### 6. Threat Generation Index (TGI) — attackers
-**"Does this player generate and convert goal threat, net of defensive errors?"**
+*"Does this player generate and convert goal threat, net of their own mistakes?"*
 
-xG (highest weight — primary attacker job), xAG (slightly lower), shot creating and goal creating actions, **minus errors leading to shot** (penalised at 1.5× — a striker who turns over possession for a counter-attack 0.25 xG chance has reduced their net contribution significantly).
+```
+TGI = xG × 2.0
+    + xAG × 1.5
+    + shot_creating_actions × 0.4
+    + goal_creating_actions × 0.8
+    − errors_leading_to_shot × 1.5
+```
+
+The error penalty is the most analytically important term. A striker generating 0.4 xG but conceding a 0.25 xG counter through their own mistake is net contributing only 0.15 on those actions. The penalty is weighted at 1.5× — higher than xAG — because conceding from your own error is an asymmetric cost.
 
 ---
 
 ## Position Weight Philosophy
 
-All component scores are normalised to 0-100 **within their position group**, then combined with position-specific weights.
+Component scores are normalised **within each position group**, not globally. A CB's DAQ score of 75 means top 25% of CBs on defending — not top 25% of all players. CBs defend ~3× more per 90 than strikers. Normalising globally would compress all strikers to near-zero on DAQ, destroying meaningful variation.
 
-**Why within-position?** A centre-back's DAQ of 75 means she's in the top 25% of CBs on defending. A striker's DAQ of 75 means she's in the top 25% of strikers on defending. These are different things — CBs defend ~3× more per 90 than strikers. Cross-position normalisation would compress all strikers to near-zero on DAQ, destroying any variation in that dimension.
+| Position | Primary Weight | Secondary | Philosophy |
+|----------|---------------|-----------|------------|
+| **CB** | DAQ 35% | BRS 25% | Defending is the job. Ball-playing CBs command premium fees. |
+| **FB** | PPI 30% | CCC 25% | Modern fullback defined by progression and chance creation. |
+| **CM** | PPI 30% | BRS 25% | The engine. Cannot progress what you give away. |
+| **ST** | TGI 45% | PPI 20% | Primary job: generate and convert threat. |
+| **GK** | Shot Stopping 55% | Distribution 25% | Save first. Play from the back second. |
 
-| Position | Primary Weight | Philosophy |
-|----------|---------------|-----------|
-| CB | DAQ (35%) | Defending is the job. Ball-playing CBs valued at BRS (25%). |
-| FB | PPI (30%) | Modern fullback is defined by progression. CCC (25%) reflects Trent/Robertson evolution. |
-| CM | PPI (30%) | The engine of the team. BRS (25%) because you can't progress what you give away. |
-| ST | TGI (45%) | Primary job: score and create. PPI (20%) + PII (20%) for work rate profile. |
-| GK | Shot Stopping (55%) | Save what you face first. Distribution (25%) for modern GK role. |
+These weights are the **football opinion** baked into the system. Changing them changes the analytical philosophy — and they are the first thing a technical interviewer will challenge you on.
 
 ---
 
 ## Player Archetypes
 
+Players are clustered into archetypes using K-Means on their composite metric profiles. Labels are assigned by inspecting which feature each cluster centroid ranks highest on — not hardcoded.
+
 ### Central Midfielders
-| Archetype | Profile | Real Reference |
-|-----------|---------|---------------|
-| Deep-Lying Playmaker | High BRS + PPI, low pressing | Busquets, Fabinho, Casemiro |
-| Box-to-Box Warrior | High PII + DAQ | Kanté, Henderson, Kovacic |
+| Archetype | Statistical Signature | Real Reference |
+|-----------|----------------------|----------------|
+| Deep-Lying Playmaker | High BRS + PPI, low PII | Busquets, Fabinho, Casemiro |
+| Box-to-Box Warrior | High PII + DAQ | Kanté, Henderson |
 | Advanced Playmaker | High CCC, elite xAG | De Bruyne-lite, Eriksen |
-| Progressive Carrier | Highest PPI via carries | Declan Rice, Fernandinho |
+| Progressive Carrier | Highest PPI via carries | Declan Rice |
 
 ### Centre-Backs
-| Archetype | Profile | Real Reference |
-|-----------|---------|---------------|
+| Archetype | Statistical Signature | Real Reference |
+|-----------|----------------------|----------------|
 | Ball-Playing Libero | High BRS + PPI | Laporte, Stones, van Dijk |
-| Aerial Enforcer | High DAQ via aerials/clearances | Schär, Lindelof |
-| Pressing CB | High PII + DAQ | Arsenal CBs in high-line system |
+| Aerial Enforcer | High DAQ via aerials | Schär, Lindelof |
+| Pressing CB | High PII + DAQ | Arsenal high-line CBs |
 | Complete Defender | Balanced DAQ + BRS | Rúben Dias |
 
 ### Full-Backs
-| Archetype | Profile |
-|-----------|---------|
+| Archetype | Statistical Signature |
+|-----------|----------------------|
 | Attacking Wingback | High PPI + CCC — Trent/Robertson |
 | Defensive FB | High DAQ — traditional role |
 | Inverted FB | High CCC — Cancelo-style |
-| Balanced FB | Balanced across dimensions |
 
----
-
-## Example Player Cards
-
-*(Generated from synthetic data — names are illustrative)*
-
-### Top Central Midfielder
-```
-┌────────────────────────────────────────────────────────────┐
-│  CENTRAL MIDFIELDER PLAYER CARD                            │
-├────────────────────────────────────────────────────────────┤
-│  Impact Score: 87.3/100    Percentile: Top 3% of CMs      │
-│  Archetype: Progressive Carrier                            │
-│  Top Strength: PPI   ↓ Biggest Weakness: DAQ              │
-│  Component Scores:                                         │
-│    PPI: 0.94  BRS: 0.81  CCC: 0.67  DAQ: 0.38  PII: 0.72 │
-└────────────────────────────────────────────────────────────┘
-```
-
-### Top Striker
-```
-┌────────────────────────────────────────────────────────────┐
-│  STRIKER PLAYER CARD                                       │
-├────────────────────────────────────────────────────────────┤
-│  Impact Score: 91.2/100    Percentile: Top 1% of STs      │
-│  Archetype: Clinical Finisher                              │
-│  Top Strength: TGI   ↓ Biggest Weakness: CCC              │
-│  Component Scores:                                         │
-│    TGI: 0.97  PPI: 0.62  PII: 0.58  BRS: 0.70  CCC: 0.31 │
-└────────────────────────────────────────────────────────────┘
-```
+### Strikers
+| Archetype | Statistical Signature |
+|-----------|----------------------|
+| Clinical Finisher | Elite TGI via xG — Haaland profile |
+| Complete Forward | High TGI + PPI — Firmino/Benzema |
+| Pressing Striker | High PII — first line of press |
+| Target Man | High TGI via aerials and hold-up |
 
 ---
 
 ## Technical Decisions
 
-**Why K-Means for clustering?**
-Player feature space is approximately Gaussian per position (by construction). K-Means produces compact, spherical clusters that map cleanly to the 4-6 archetypes scouts actually use. DBSCAN would mark outlier players as noise — wrong analytically. Outlier players (a CB who carries more than most midfielders) are the *most* interesting scouting targets, not discardable observations.
+**Why K-Means and not DBSCAN or hierarchical clustering?**
 
-**Why MinMax for scoring, StandardScaler for clustering?**
-Scoring needs bounded 0-100 output for human readability. Clustering needs true variance preserved — a feature spanning 0.1 to 50 should exert more geometric influence than one spanning 0.1 to 0.8.
+Player feature space is approximately Gaussian per position. K-Means produces compact spherical clusters that map cleanly to the 4–6 archetypes scouts actually use in conversation. DBSCAN would mark outlier players as noise — analytically wrong, because an outlier player (a CB who carries more than most midfielders) is the *most* interesting scouting target. We want to find them, not discard them.
+
+**Why MinMaxScaler for scoring but StandardScaler for clustering?**
+
+Scoring needs bounded 0–100 output that humans read immediately. Clustering needs true variance preserved — a feature spanning 0.1–50 should exert more geometric influence than one spanning 0.1–0.8. MinMax equalises these ranges artificially. StandardScaler preserves relative variance so genuine outliers pull the cluster geometry correctly.
 
 **Why not a neural network?**
-Interpretability. A scout needs to explain to a sporting director WHY a player scores 73/100. A neural network cannot say "high DAQ but weak BRS — dominant defender who loses the ball too often under pressure." The weighted composite is fully auditable.
+
+Interpretability. A scout needs to explain to a sporting director *why* a player scores 73/100. A neural network cannot say "high DAQ but weak BRS — dominant defender who loses the ball too often." The weighted composite is fully auditable. Every number traces back to a formula with a football reason.
+
+**How would you validate this against real outcomes?**
+
+Three approaches from the football analytics literature:
+1. Correlate impact score with end-of-season Transfermarkt market value change
+2. Correlate with manager selection frequency (minutes played the following season)
+3. Team xG differential in games with vs without the player — the gold-standard VAEP approach (Decroos et al., 2019)
 
 ---
 
 ## What I Learned
 
-Building this project forced three key analytical skills:
+**Football knowledge is the constraint, not the code.** Deciding that `pressure_success_rate` should be *multiplied* by `pressures` rather than added to them is a football decision. Every formula weight has a reason rooted in how the sport actually works — and defending those reasons is harder than writing the code.
 
-1. **Football knowledge is the constraint, not the code.** Deciding that `pressure_success_rate` should be multiplied by `pressures` rather than added to them is a football decision, not a maths decision. Every formula has a reason rooted in how the sport actually works.
+**Normalisation choices have large downstream consequences.** Choosing MinMax vs StandardScaler changes whether a Haaland-profile player pulls the cluster geometry correctly. These are not arbitrary defaults — they reflect what you need "distance" to mean in each layer of the pipeline.
 
-2. **Normalisation choices have massive downstream consequences.** Choosing MinMax vs StandardScaler changes whether Haaland's xG pulls the cluster geometry correctly. These aren't arbitrary — they reflect what you need distance to *mean* in each layer.
-
-3. **Outliers are signal, not noise, in sports data.** The standard instinct to remove outliers is analytically wrong here. A 35-xG season IS the finding. Winsorisation preserves rank while preventing mathematical dominance of scaled outputs.
+**Outliers are signal, not noise, in sports data.** The instinct to remove outliers is analytically wrong here. A 35-xG season IS the finding. Winsorisation preserves rank-ordering while preventing mathematical dominance of scaled outputs — preserving the outlier's status as the top value without letting it collapse everyone else to the bottom 5% of a 0–100 scale.
 
 ---
 
-## How to Run
+## Run Locally
 
 ```bash
-# 1. Install dependencies
+# Clone the repository
+git clone https://github.com/adityajha1606/football-impact-rating.git
+cd football-impact-rating
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Run full pipeline
+# Run the full data pipeline (generates data, scores, clusters, saves charts)
 python main.py
 
-# 3. View the analysis notebook
-jupyter notebook notebooks/analysis.ipynb
+# Launch the interactive web app locally
+streamlit run app.py
 ```
-
-All outputs (charts) are saved to `outputs/`.
 
 ---
 
@@ -184,22 +237,51 @@ All outputs (charts) are saved to `outputs/`.
 
 ```
 football-impact-rating/
-├── data/
-│   ├── raw/players_raw.csv          # synthetic FBref-style data
-│   └── processed/players_processed.csv
+├── app.py                           # Streamlit web application
+├── main.py                          # Full pipeline runner (CLI)
+├── requirements.txt
+│
 ├── src/
-│   ├── data_generator.py            # realistic synthetic data with position distributions
-│   ├── preprocessing.py             # filtering, winsorisation, validation
-│   ├── feature_engineering.py       # PPI, DAQ, CCC, BRS, PII, TGI composite metrics
-│   ├── impact_scorer.py             # weighted scoring engine + player cards
+│   ├── data_generator.py            # Synthetic FBref-style data (500 players)
+│   ├── preprocessing.py             # Minutes filter, winsorisation, validation
+│   ├── feature_engineering.py       # PPI, DAQ, CCC, BRS, PII, TGI
+│   ├── impact_scorer.py             # Weighted 0–100 scoring engine + player cards
 │   ├── clustering.py                # K-Means archetype identification
-│   └── visualizer.py                # StatsBomb-aesthetic charts
-├── notebooks/analysis.ipynb
-├── outputs/                         # PNG chart outputs
-├── main.py
-└── requirements.txt
+│   └── visualizer.py                # StatsBomb-aesthetic matplotlib charts
+│
+├── data/
+│   ├── raw/players_raw.csv          # Generated on first run
+│   └── processed/players_processed.csv
+│
+├── notebooks/
+│   └── analysis.ipynb               # End-to-end walkthrough with football context
+│
+└── outputs/                         # PNG charts (generated on run)
+    ├── cm_radar_top_scorer.png
+    ├── cm_scatter_daq_vs_ppi.png
+    ├── cm_impact_distribution.png
+    ├── cm_archetype_heatmap.png
+    ├── cm_comparison_spider.png
+    └── cm_similarity_network.png
 ```
 
 ---
 
-*Built as a portfolio project demonstrating ML engineering in a football analytics context. Data is synthetic but statistically grounded in real FBref Premier League distributions.*
+## Stack
+
+| Tool | Purpose |
+|------|---------|
+| Python 3.10+ | Core language |
+| pandas | Data manipulation and per-90 stats |
+| NumPy | Statistical distributions, array operations |
+| scikit-learn | MinMaxScaler, StandardScaler, KMeans, silhouette score |
+| matplotlib | All visualisations (radar, scatter, heatmap, network) |
+| Streamlit | Interactive web app and deployment |
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/adityajha1606">Aditya Jha</a> &nbsp;·&nbsp;
+  <a href="https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/">Live App</a> &nbsp;·&nbsp;
+  Data is synthetic but statistically grounded in real FBref Premier League distributions
+</p>
