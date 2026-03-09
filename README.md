@@ -11,13 +11,13 @@
 
 ## So, what is this?
 
-You know that feeling when a midfielder runs 11km, wins every second ball, and presses relentlessly for 90 minutes — and the match report says he had "a quiet game" because he didn't score or assist?
+You know that feeling when a midfielder runs 11km, wins every second ball, and presses relentlessly for 90 minutes - and the match report says he had "a quiet game" because he didn't score or assist?
 
 Yeah. This project was built for that.
 
-Football Impact Rating is a player scoring system (0 to 100) that looks at what players *actually do* on the pitch — not just the moments that end up in the scoresheet. It covers Premier League-style data across all five positions, groups players into real tactical archetypes, and wraps everything up in an interactive web app you can use right now.
+Football Impact Rating is a player scoring system (0 to 100) that looks at what players *actually do* on the pitch - not just the moments that end up in the scoresheet. It covers Premier League-style data across all five positions, groups players into real tactical archetypes, and wraps everything up in an interactive web app you can use right now.
 
-Under the hood it is a full ML pipeline: data generation, preprocessing, feature engineering, position-aware scoring, K-Means clustering, and six different charts — all deployed live via Streamlit.
+Under the hood it is a full ML pipeline: data generation, preprocessing, feature engineering, position-aware scoring, K-Means clustering, and six different charts - all deployed live via Streamlit.
 
 ---
 
@@ -34,7 +34,7 @@ Here is what it picks up that box scores completely miss:
 - A CB who breaks the press by carrying the ball 40 metres (that is pure van Dijk)
 - A midfielder who wins the ball back in dangerous areas more than anyone else in the league (Kante, obviously)
 - A full-back creating more expected assisted goals than most number tens (you know who)
-- A striker generating 0.4 xG per game but leaking 0.25 xG through their own errors — their net contribution on those actions is 0.15, not 0.4
+- A striker generating 0.4 xG per game but leaking 0.25 xG through their own errors - their net contribution on those actions is 0.15, not 0.4
 
 Goals and assists tell you what happened at the very end. This tells you why.
 
@@ -70,7 +70,7 @@ PPI = (progressive_carries x 1.0
      + passes_into_final_third x 0.8) / 4
 ```
 
-Carries get the top weight because when you drive forward with the ball you are personally taking the risk and earning the reward. Receiving a progressive pass gets the lowest weight — your teammate did most of the work there, you just had to be in the right spot. De Bruyne and Declan Rice both score elite here, but for completely different reasons.
+Carries get the top weight because when you drive forward with the ball you are personally taking the risk and earning the reward. Receiving a progressive pass gets the lowest weight - your teammate did most of the work there, you just had to be in the right spot. De Bruyne and Declan Rice both score elite here, but for completely different reasons.
 
 ---
 
@@ -84,7 +84,7 @@ DAQ = (tackles_won x 1.2
      + (aerial_duels_won_pct / 100) x aerials_attempted x 0.8) / 4
 ```
 
-The most important detail here is how pressing is handled. Press volume is **multiplied** by success rate, not added to it. Burnley under Sean Dyche in 2022-23 pressed more than almost anyone — and won the ball back almost never. Pure volume would make them look like an elite pressing side. Multiplying by success rate correctly exposes them. For aerials, we weight by attempts too, so winning 60% of 8 headers beats winning 80% of 1.
+The most important detail here is how pressing is handled. Press volume is **multiplied** by success rate, not added to it. Burnley under Sean Dyche in 2022-23 pressed more than almost anyone - and won the ball back almost never. Pure volume would make them look like an elite pressing side. Multiplying by success rate correctly exposes them. For aerials, we weight by attempts too, so winning 60% of 8 headers beats winning 80% of 1.
 
 ---
 
@@ -98,7 +98,7 @@ CCC = (key_passes x 1.0
      + xAG x 2.0) / 4
 ```
 
-xAG — expected assisted goals — gets the double weight because it measures chance **quality**, not just chance **quantity**. Three assists from tap-ins inside a crowded six-yard box scores much lower than two assists from genuine through-ball one-on-ones. Key passes get the modest weight because a 2-yard cutback to a crowded box counts the same as a 40-yard defence-splitting pass. xAG fixes that.
+xAG - expected assisted goals - gets the double weight because it measures chance **quality**, not just chance **quantity**. Three assists from tap-ins inside a crowded six-yard box scores much lower than two assists from genuine through-ball one-on-ones. Key passes get the modest weight because a 2-yard cutback to a crowded box counts the same as a 40-yard defence-splitting pass. xAG fixes that.
 
 ---
 
@@ -123,7 +123,7 @@ Raw pass completion on its own just rewards players who pass backwards all game.
 PII = pressures x (pressure_success_rate / 100) x (1 + carries_into_final_third x 0.1)
 ```
 
-The multiplicative structure is the whole point. Pressing 40 times at 15% gives you 6.0 effective recoveries. Pressing 20 times at 30% also gives you 6.0. Volume alone tells you nothing. The carry bonus on top rewards players who win the ball high up the pitch and immediately go forward — the press-and-go archetype that Jurgen Klopp built an entire identity around.
+The multiplicative structure is the whole point. Pressing 40 times at 15% gives you 6.0 effective recoveries. Pressing 20 times at 30% also gives you 6.0. Volume alone tells you nothing. The carry bonus on top rewards players who win the ball high up the pitch and immediately go forward - the press-and-go archetype that Jurgen Klopp built an entire identity around.
 
 ---
 
@@ -138,13 +138,13 @@ TGI = xG x 2.0
     - errors_leading_to_shot x 1.5
 ```
 
-That minus at the end is doing real work. A striker generating 0.4 xG per game but gifting 0.25 xG to the opposition through their own mistake is not contributing 0.4 — they are contributing 0.15 on those actions. The error penalty is weighted above xAG because giving the ball away in a dangerous position has a cost you cannot undo.
+That minus at the end is doing real work. A striker generating 0.4 xG per game but gifting 0.25 xG to the opposition through their own mistake is not contributing 0.4 - they are contributing 0.15 on those actions. The error penalty is weighted above xAG because giving the ball away in a dangerous position has a cost you cannot undo.
 
 ---
 
 ## How each position is scored
 
-Scores are normalised **within each position group**, not across the whole dataset. A centre-back's DAQ score of 75 means they are in the top 25% of centre-backs on defending. It does not mean they are in the top 25% of all 500 players — that comparison would be meaningless because strikers do a fraction of the defensive work CBs do.
+Scores are normalised **within each position group**, not across the whole dataset. A centre-back's DAQ score of 75 means they are in the top 25% of centre-backs on defending. It does not mean they are in the top 25% of all 500 players - that comparison would be meaningless because strikers do a fraction of the defensive work CBs do.
 
 | Position | Top weight | Second weight | The idea behind it |
 |----------|-----------|---------------|-------------------|
@@ -160,7 +160,7 @@ These weights are where the football opinion lives in the code. Change them and 
 
 ## Player archetypes
 
-K-Means clusters each position into tactical archetypes. The labels come from inspecting which metric each cluster scores highest on and matching it to real football language — not from hardcoding cluster numbers.
+K-Means clusters each position into tactical archetypes. The labels come from inspecting which metric each cluster scores highest on and matching it to real football language - not from hardcoding cluster numbers.
 
 ### Central Midfielders
 | Archetype | What the numbers look like | Think of |
@@ -181,16 +181,16 @@ K-Means clusters each position into tactical archetypes. The labels come from in
 ### Full-Backs
 | Archetype | What the numbers look like |
 |-----------|---------------------------|
-| Attacking Wingback | High PPI and CCC — the Trent/Robertson profile |
-| Defensive FB | High DAQ — old school, reliable |
-| Inverted FB | High CCC — the Cancelo experiment |
+| Attacking Wingback | High PPI and CCC - the Trent/Robertson profile |
+| Defensive FB | High DAQ - old school, reliable |
+| Inverted FB | High CCC - the Cancelo experiment |
 
 ### Strikers
 | Archetype | What the numbers look like |
 |-----------|---------------------------|
-| Clinical Finisher | Elite TGI through xG — think Haaland |
-| Complete Forward | High TGI and PPI — Firmino, Benzema |
-| Pressing Striker | High PII — the side's first line of defence |
+| Clinical Finisher | Elite TGI through xG - think Haaland |
+| Complete Forward | High TGI and PPI - Firmino, Benzema |
+| Pressing Striker | High PII - the side's first line of defence |
 | Target Man | High TGI through aerials and hold-up play |
 
 ---
@@ -201,22 +201,22 @@ These are the questions you will get asked if you put this on your CV, so here a
 
 **Why K-Means and not DBSCAN or hierarchical clustering?**
 
-Player data per position is roughly Gaussian in shape — K-Means handles that well. More importantly, DBSCAN marks unusual players as noise and discards them. That is exactly wrong for scouting. A CB who carries the ball like a midfielder is not an outlier to be discarded — he is the most interesting player in the dataset. We want to find him and cluster him, not throw him away.
+Player data per position is roughly Gaussian in shape - K-Means handles that well. More importantly, DBSCAN marks unusual players as noise and discards them. That is exactly wrong for scouting. A CB who carries the ball like a midfielder is not an outlier to be discarded - he is the most interesting player in the dataset. We want to find him and cluster him, not throw him away.
 
 **Why MinMaxScaler for scoring but StandardScaler for clustering?**
 
-Scoring needs a number between 0 and 100 that a human can immediately understand. Clustering needs true distances between players in feature space — and for that you need variance preserved. A stat that ranges from 0.1 to 50 should pull the cluster geometry harder than one that ranges from 0.1 to 0.8. MinMax flattens that difference. StandardScaler keeps it.
+Scoring needs a number between 0 and 100 that a human can immediately understand. Clustering needs true distances between players in feature space - and for that you need variance preserved. A stat that ranges from 0.1 to 50 should pull the cluster geometry harder than one that ranges from 0.1 to 0.8. MinMax flattens that difference. StandardScaler keeps it.
 
 **Why not just use a neural network?**
 
-Because when a scout shows a sporting director a rating of 73/100 and gets asked why, the answer cannot be "the network said so." The weighted composite can say: high DAQ, weak BRS — a dominant defender who loses the ball too often under pressure. That is a conversation. A neural network is a wall.
+Because when a scout shows a sporting director a rating of 73/100 and gets asked why, the answer cannot be "the network said so." The weighted composite can say: high DAQ, weak BRS - a dominant defender who loses the ball too often under pressure. That is a conversation. A neural network is a wall.
 
 **How would you validate this with real data?**
 
 Three ways, all used in the literature:
 1. Correlate impact scores with end-of-season Transfermarkt market value changes
-2. Compare against manager selection — do high-scoring players play more minutes the following season?
-3. Team xG differential with vs without the player on the pitch — the approach behind VAEP (Decroos et al., 2019)
+2. Compare against manager selection - do high-scoring players play more minutes the following season?
+3. Team xG differential with vs without the player on the pitch - the approach behind VAEP (Decroos et al., 2019)
 
 ---
 
@@ -226,7 +226,7 @@ Three ways, all used in the literature:
 
 **Normalisation is not just a preprocessing step.** Choosing MinMax vs StandardScaler changes whether a Haaland-profile outlier correctly anchors the cluster geometry or gets squeezed in with everyone else. Every choice in the pipeline has a downstream consequence you have to think through.
 
-**In sports, the outlier is the point.** The standard data science instinct is to remove outliers or treat them as noise. In football analytics that instinct would delete the most valuable player in the dataset. Winsorisation caps their influence on the scale without erasing them from the rankings — they still sit at the top, they just do not pull the floor down for everyone else.
+**In sports, the outlier is the point.** The standard data science instinct is to remove outliers or treat them as noise. In football analytics that instinct would delete the most valuable player in the dataset. Winsorisation caps their influence on the scale without erasing them from the rankings - they still sit at the top, they just do not pull the floor down for everyone else.
 
 ---
 
@@ -244,7 +244,7 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the full pipeline — generates data, scores, clusters, saves charts
+# Run the full pipeline - generates data, scores, clusters, saves charts
 python main.py
 
 # Or launch the web app locally
