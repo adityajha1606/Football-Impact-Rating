@@ -5,7 +5,7 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-deployed-FF4B4B?logo=streamlit&logoColor=white)](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)
 
-> **[Play with the live app here](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)** — no Python, no setup, just open and explore.
+> **[Play with the live app here](https://football-impact-rating-fqhanzackiv4m4kwguioug.streamlit.app/)** - I hope you like it.
 
 ---
 
