@@ -181,19 +181,19 @@ Players are clustered into archetypes using K-Means on their composite metric pr
 
 **Why K-Means and not DBSCAN or hierarchical clustering?**
 
-Player feature space is approximately Gaussian per position. K-Means produces compact spherical clusters that map cleanly to the 4–6 archetypes scouts actually use in conversation. DBSCAN would mark outlier players as noise — analytically wrong, because an outlier player (a CB who carries more than most midfielders) is the *most* interesting scouting target. We want to find them, not discard them.
+- Player feature space is approximately Gaussian per position. K-Means produces compact spherical clusters that map cleanly to the 4–6 archetypes scouts actually use in conversation. DBSCAN would mark outlier players as noise — analytically wrong, because an outlier player (a CB who carries more than most midfielders) is the *most* interesting scouting target. We want to find them, not discard them.
 
 **Why MinMaxScaler for scoring but StandardScaler for clustering?**
 
-Scoring needs bounded 0–100 output that humans read immediately. Clustering needs true variance preserved — a feature spanning 0.1–50 should exert more geometric influence than one spanning 0.1–0.8. MinMax equalises these ranges artificially. StandardScaler preserves relative variance so genuine outliers pull the cluster geometry correctly.
+- Scoring needs bounded 0–100 output that humans read immediately. Clustering needs true variance preserved — a feature spanning 0.1–50 should exert more geometric influence than one spanning 0.1–0.8. MinMax equalises these ranges artificially. StandardScaler preserves relative variance so genuine outliers pull the cluster geometry correctly.
 
 **Why not a neural network?**
 
-Interpretability. A scout needs to explain to a sporting director *why* a player scores 73/100. A neural network cannot say "high DAQ but weak BRS — dominant defender who loses the ball too often." The weighted composite is fully auditable. Every number traces back to a formula with a football reason.
+- Interpretability. A scout needs to explain to a sporting director *why* a player scores 73/100. A neural network cannot say "high DAQ but weak BRS — dominant defender who loses the ball too often." The weighted composite is fully auditable. Every number traces back to a formula with a football reason.
 
 **How would you validate this against real outcomes?**
 
-Three approaches from the football analytics literature:
+- Three approaches from the football analytics literature:
 1. Correlate impact score with end-of-season Transfermarkt market value change
 2. Correlate with manager selection frequency (minutes played the following season)
 3. Team xG differential in games with vs without the player — the gold-standard VAEP approach (Decroos et al., 2019)
